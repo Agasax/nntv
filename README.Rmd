@@ -1,0 +1,72 @@
+---
+title: "NNTV"
+author: 
+  - "Lars Mølgaard Saxhaug https://twitter.com/load_dependent\n"
+date: 
+  - Last compiled on `r format(Sys.time(), '%A %d %B, %Y')`
+output: github_document
+---
+
+```{r setup, include=FALSE}
+pacman::p_load(tidyverse,
+               ggthemes,
+               gganimate)
+theme_set(theme_fivethirtyeight())
+```
+
+
+```{r sim, echo=TRUE}
+base_risk <- 0.01
+sample_size=1e6
+vaccinated_risk <- 0.002
+ve_true <- (base_risk-vaccinated_risk)/base_risk
+weeks <- 53
+df <- tibble(week=1:weeks,vaccinated_healthy=c(sample_size,rep(NA,weeks-1)),placebo_healthy=c(sample_size,rep(NA,weeks-1)))
+ for (i in 2:weeks) {
+   df[i,"vaccinated_healthy"] <- df[i-1,"vaccinated_healthy"]*(1-vaccinated_risk) 
+   df[i,"placebo_healthy"] <-  df[i-1,"placebo_healthy"]*(1-base_risk)
+   }
+
+df <- df %>% slice(-1) %>% 
+  mutate(eer=(sample_size-vaccinated_healthy)/sample_size,
+         cer=(sample_size-placebo_healthy)/sample_size,
+         rr=eer/cer,
+         ve=1-rr,
+         ar=cer-eer,
+         nntv=1/ar
+         )
+
+
+
+```
+
+```{r ve,echo=FALSE}
+ ve_plot <-  df %>% 
+  ggplot(aes(x=week,y=ve))+
+  geom_line(colour="steelblue")+
+  geom_point(size=2,colour="steelblue")+
+  theme_solarized()+
+  theme(legend.position = "none")+
+  scale_y_continuous(name="VE",labels = scales::percent_format(),limits = c(0,1))+
+  scale_x_discrete(name="Weeks")+
+  labs(title="Vaccine efficacy")+
+  transition_reveal(week) 
+  animate(ve_plot,end_pause=10)
+```
+
+```{r nntv, echo=FALSE}
+  nntv_plot <- df %>% 
+  ggplot(aes(x=week,y=nntv))+
+  geom_line(colour="steelblue")+
+  geom_point(size=2,colour="steelblue")+
+  theme_solarized()+
+  theme(legend.position = "none")+
+  scale_y_continuous(name="NNTV")+
+  scale_x_continuous(name="Weeks")+
+  labs(title="Number needed to vaccinate")+
+  transition_reveal(week) 
+  animate(nntv_plot,end_pause=10)
+```
+
+ 
+ 
