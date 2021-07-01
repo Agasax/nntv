@@ -36,8 +36,6 @@ df <- df %>% slice(-1) %>%
          nntv=1/ar
          )
 
-
-
 ```
 
 ```{r ve,echo=FALSE}
