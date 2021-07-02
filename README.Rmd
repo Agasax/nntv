@@ -8,63 +8,130 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-pacman::p_load(tidyverse,
-               ggthemes,
-               gganimate)
+pacman::p_load(
+  tidyverse,
+  ggthemes,
+  gganimate
+)
 theme_set(theme_fivethirtyeight())
-
 ```
 
 
-```{r sim, echo=TRUE}
-base_risk <- 0.001 # risk per  week placebo group
-vaccinated_risk <- 0.0002 # risk per  week vaccinated group
-sample_size=1e6 # size of each group
-ve_true <- (base_risk-vaccinated_risk)/base_risk
-weeks <- 52 # number of weeks
+```{r sim_variable_base, echo=TRUE}
+ve_true <- 0.8 # vaccine efficacy, 1-rr
+sample_size <- 1e6 # size of each group
+weeks <- 52 # maximum number  of weeks of follow up
 
-df <- tibble(week=1:weeks,
-            vaccinated_cases=sample_size*vaccinated_risk*week,
-            placebo_cases=sample_size*base_risk*week)
 
-df <- df  %>% 
-  mutate(eer=(vaccinated_cases)/sample_size, # exposed event risk
-         cer=(placebo_cases)/sample_size, # placebo event risk
-         rr=eer/cer,
-         ve=1-rr,
-         ar=cer-eer,
-         nntv=1/ar
-         ) 
+df <- tibble(
+  week = rep(1:weeks, 3),
+  base_risk = c(rep(0.01, weeks), rep(0.005, weeks), rep(0.001, weeks)), # base risk per week, three
+  vaccinated_risk = base_risk - ve_true * base_risk,
+  vaccinated_cases=sample_size-sample_size * (1 - vaccinated_risk)^week,
+  placebo_cases=sample_size-sample_size * (1 - base_risk)^week)
+d <- df %>% 
+  group_by(base_risk) %>% 
+nest()
+
+df <- df %>%
+  mutate(
+    eer = (vaccinated_cases) / sample_size, # exposed event risk
+    cer = (placebo_cases) / sample_size, # placebo event risk
+    rr = eer / cer,
+    ve = 1 - rr,
+    ar = cer - eer,
+    nntv = 1 / ar
+  )
+
 ```
-True vaccine efficacy is `r scales::percent(ve_true)`
+
+#### Variable base risk:
+
 ```{r ve,echo=FALSE, cache=TRUE}
- ve_plot <-  df %>% 
-  ggplot(aes(x=week,y=ve))+
-  geom_line(colour="steelblue")+
-  geom_point(size=2,colour="steelblue")+
-  theme_solarized()+
-  theme(legend.position = "none")+
-  scale_y_continuous(name="VE",labels = scales::percent_format(),limits = c(0,1))+
-  scale_x_continuous(name="Weeks")+
-  labs(title="Vaccine efficacy, by weeks of follow up",caption = "@load_dependent")+
-  transition_reveal(week) 
-  animate(ve_plot,end_pause=10)
+ve_plot <- df %>%
+  ggplot(aes(x = week, y = ve, colour = factor(base_risk))) +
+  geom_line() +
+  geom_point(size = 2) +
+  theme_solarized() +
+  theme(legend.position = "bottom") +
+  scale_colour_fivethirtyeight(name="Base risk") +
+  scale_y_continuous(name = "", labels = scales::percent_format(), limits = c(0, 1)) +
+  scale_x_continuous(name = "Weeks") +
+  labs(title = "Vaccine efficacy, by no. weeks of follow up", caption = "@load_dependent") +
+  transition_reveal(week)
+animate(ve_plot, end_pause = 10)
 ```
 
 ```{r nntv, echo=FALSE,cache=TRUE}
-  nntv_plot <- df %>% 
-  ggplot(aes(x=week,y=nntv))+
-  geom_line(colour="steelblue")+
-  geom_point(size=2,colour="steelblue")+
-  geom_hline(yintercept = 1,linetype="dashed",alpha=0.5)+
-  theme_solarized()+
-  theme(legend.position = "none")+
-  scale_y_continuous(name="NNTV",breaks = c(1,400,800,1200))+
-  scale_x_continuous(name="Weeks")+
-  labs(title="Number needed to vaccinate, by weeks of follow up",caption = "@load_dependent")+
-  transition_reveal(week) 
-  animate(nntv_plot,end_pause=10)
+nntv_plot <- df %>%
+  ggplot(aes(x = week, y = nntv, colour = factor(base_risk))) +
+  geom_line() +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 1, linetype = "dashed", alpha = 0.5) +
+  theme_solarized() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(name = "NNTV", breaks = c(1, 400, 800, 1200)) +
+  scale_x_continuous(name = "Weeks") +
+  scale_color_fivethirtyeight(name = "Base risk") +
+  labs(title = "Number needed to vaccinate, by no. weeks of follow up and base risk", subtitle = paste("Vaccine efficacy", scales::percent(ve_true)), caption = "@load_dependent") +
+  transition_reveal(week)
+animate(nntv_plot, end_pause = 10)
+```
+#### Variable vaccine efficacy
+```{r sim_variable_ve}
+rm(ve_true)
+sample_size <- 1e6 # size of each group
+weeks <- 52 # maximum number  of weeks of follow up
+base <- 0.005
+
+df <- tibble(
+  week = rep(1:weeks, 3),
+  ve_true= c(rep(0.5, weeks), rep(0.7, weeks), rep(0.9, weeks)),
+  base_risk = rep(base, 3*weeks), 
+  vaccinated_risk = base_risk - ve_true * base_risk,
+  vaccinated_cases=sample_size-sample_size * (1 - vaccinated_risk)^week,
+  placebo_cases=sample_size-sample_size * (1 - base_risk)^week)
+
+
+df <- df %>%
+  mutate(
+    eer = (vaccinated_cases) / sample_size, # exposed event risk
+    cer = (placebo_cases) / sample_size, # placebo event risk
+    rr = eer / cer,
+    ve = 1 - rr,
+    ar = cer - eer,
+    nntv = 1 / ar
+  )
+
+```
+ 
+```{r ve_variable,echo=FALSE, cache=TRUE}
+ve_variable_plot <- df %>%
+  ggplot(aes(x = week, y = ve, colour = factor(ve_true))) +
+  geom_line() +
+  geom_point(size = 2) +
+  theme_solarized() +
+  theme(legend.position = "bottom") +
+  scale_colour_fivethirtyeight(name="Vaccine efficacy") +
+  scale_y_continuous(name = "VE", labels = scales::percent_format(), limits = c(0, 1)) +
+  scale_x_continuous(name = "Weeks") +
+  labs(title = "Vaccine efficacy, by no. weeks of follow up", caption = "@load_dependent") +
+  transition_reveal(week)
+animate(ve_variable_plot, end_pause = 10)
 ```
 
- 
- 
+```{r nntv_variable_ve, echo=FALSE,cache=TRUE}
+nntv_variable_ve_plot <- df %>%
+  ggplot(aes(x = week, y = nntv, colour = factor(ve_true))) +
+  geom_line() +
+  geom_point(size = 2) +
+  geom_hline(yintercept = 1, linetype = "dashed", alpha = 0.5) +
+  theme_solarized() +
+  theme(legend.position = "bottom") +
+  scale_y_continuous(name = "NNTV", breaks = c(1, 100, 200, 300,400)) +
+  scale_x_continuous(name = "Weeks") +
+  scale_color_fivethirtyeight(name = "Vaccine efficacy") +
+  labs(title = "Number needed to vaccinate, by no. weeks of follow up and vaccine efficacy", subtitle = paste("Base risk", base), caption = "@load_dependent") +
+  transition_reveal(week)
+animate(nntv_variable_ve_plot, end_pause = 10)
+```
