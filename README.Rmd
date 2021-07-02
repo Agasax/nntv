@@ -58,9 +58,10 @@ True vaccine efficacy is `r scales::percent(ve_true)`
   ggplot(aes(x=week,y=nntv))+
   geom_line(colour="steelblue")+
   geom_point(size=2,colour="steelblue")+
+  geom_hline(yintercept = 1,linetype="dashed",alpha=0.5)+
   theme_solarized()+
   theme(legend.position = "none")+
-  scale_y_continuous(name="NNTV")+
+  scale_y_continuous(name="NNTV",breaks = c(1,400,800,1200))+
   scale_x_continuous(name="Weeks")+
   labs(title="Number needed to vaccinate, by weeks of follow up",caption = "@load_dependent")+
   transition_reveal(week) 
