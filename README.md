@@ -5,12 +5,13 @@ Lars Mølgaard Saxhaug <https://twitter.com/load_dependent>
 Last compiled on Friday 02 July, 2021
 
 ``` r
-base_risk <- 0.001
-sample_size=1e6
-vaccinated_risk <- 0.0002
+base_risk <- 0.001 # risk per  week
+sample_size=1e6 # size of each group
+vaccinated_risk <- 0.0002 # risk per  week
 ve_true <- (base_risk-vaccinated_risk)/base_risk
-weeks <- 52
-df <- tibble(week=0:weeks,
+weeks <- 52 # number of weeks
+
+df <- tibble(week=1:weeks,
             sample_siz=sample_size,
             vaccinated_at_risk=sample_size*(1-vaccinated_risk)^week,
             placebo_at_risk=sample_size*(1-base_risk)^week,
@@ -18,14 +19,13 @@ df <- tibble(week=0:weeks,
             placebo_cases=sample_size-placebo_at_risk)
 
 df <- df  %>% 
-  mutate(eer=(vaccinated_cases)/placebo_at_risk,
-         cer=(placebo_cases)/placebo_at_risk,
+  mutate(eer=(vaccinated_cases)/placebo_at_risk, # exposed event risk
+         cer=(placebo_cases)/placebo_at_risk, # placebo event risk
          rr=eer/cer,
          ve=1-rr,
          ar=cer-eer,
          nntv=1/ar
-         ) %>% 
-  drop_na()
+         ) 
 ```
 
 True vaccine efficacy is 80%
