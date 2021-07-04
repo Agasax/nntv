@@ -131,7 +131,7 @@ nntv_variable_ve_plot <- df %>%
   scale_y_continuous(name = "NNTV", breaks = c(1, 100, 200, 300,400)) +
   scale_x_continuous(name = "Weeks") +
   scale_color_fivethirtyeight(name = "Vaccine efficacy") +
-  labs(title = "Number needed to vaccinate, by no. weeks of follow up and vaccine efficacy", subtitle = paste("Base risk", base), caption = "@load_dependent") +
+  labs(title = "NNTV, by weeks of follow up and vaccine efficacy", subtitle = paste("Base risk", base), caption = "@load_dependent") +
   transition_reveal(week)
 animate(nntv_variable_ve_plot, end_pause = 10)
 ```
